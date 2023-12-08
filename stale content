@@ -1,5 +1,5 @@
 import tableauserverclient as TSC
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Tableau Server information
 tableau_server = 'https://your-tableau-server'
@@ -13,12 +13,17 @@ server = TSC.Server(tableau_server)
 
 # Set threshold for stale content (in days)
 threshold_days = 45
-cutoff_date = datetime.now() - timedelta(days=threshold_days)
+cutoff_date = datetime.now(timezone.utc) - timedelta(days=threshold_days)
 
 # Connect to Tableau Server and get workbook information
 with server.auth.sign_in(tableau_auth):
     all_workbooks, pagination_item = server.workbooks.get()
-    stale_workbooks = [workbook for workbook in all_workbooks if workbook.updated_at < cutoff_date]
+
+    # Ensure all datetime objects are timezone-aware
+    stale_workbooks = [
+        workbook for workbook in all_workbooks
+        if datetime.strptime(workbook.updated_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc) < cutoff_date
+    ]
 
 # Display stale workbook information
 print("Stale Workbooks:")
