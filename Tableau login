@@ -1,43 +1,42 @@
-# pip install tableau-api-lib
-
-# Import Libraries:
-from tableau_api_lib import TableauServerConnection, Server
-from tableau_api_lib.utils.querying import get_sites, get_projects_dataframe, get_workbooks_dataframe
+import tableauserverclient as TSC
 from datetime import datetime, timedelta
+from sqlalchemy import create_engine
+import pandas as pd
 
-# Connect to Tableau Server:
-server = Server('https://your-tableau-server-url')
-server.use_server_version()
-connection = TableauServerConnection('your-username', 'your-password', server)
-connection.sign_in()
+# Tableau Server information
+tableau_server = 'https://your-tableau-server'
+username = 'your-username'
+password = 'your-password'
+site = 'your-site'
 
-# Get all sites:
-all_sites, pagination_item = get_sites(connection)
+# Connect to Tableau Server
+tableau_auth = TSC.TableauAuth(username, password, site)
+server = TSC.Server(tableau_server)
 
-# Loop through each site:
-for site in all_sites:
-    site_id = site.id
-    site_name = site.content_url
+# Set threshold for stale content (in days)
+threshold_days = 45
+cutoff_date = datetime.now() - timedelta(days=threshold_days)
 
-    # Switch to the current site:
-    connection.switch_site(site_id)
+# Connect to Tableau Server and get workbook information
+with server.auth.sign_in(tableau_auth):
+    all_workbooks, pagination_item = server.workbooks.get()
+    stale_workbooks = [workbook for workbook in all_workbooks if workbook.updated_at < cutoff_date]
 
-    # Identify Stale Content for the current site:
-    threshold_date = datetime.now() - timedelta(days=365)  # adjust the days as needed
-    all_workbooks_df = get_workbooks_dataframe(connection)
-    stale_workbooks = all_workbooks_df[all_workbooks_df['updated_at'] < threshold_date]
+# Display stale workbook information
+print("Stale Workbooks:")
+for workbook in stale_workbooks:
+    print(f"Name: {workbook.name}, Last Updated: {workbook.updated_at}")
 
-    # Print or handle stale workbooks for the current site:
-    print(f"Stale workbooks in {site_name} site:")
-    print(stale_workbooks)
+# SQL connection to store stale workbook information
+db_connection_string = 'sqlite:///stale_workbooks.db'  # Change this based on your database type
+engine = create_engine(db_connection_string)
 
-    # Move Stale Content to Archive (modify as needed):
-    # archive_project_name = 'Archive'
-    # all_projects_df = get_projects_dataframe(connection)
-    # archive_project_id = all_projects_df.loc[all_projects_df['name'] == archive_project_name, 'id'].values[0]
+# Store stale workbook information in a database table
+stale_workbooks_df = pd.DataFrame([(workbook.name, workbook.updated_at) for workbook in stale_workbooks], 
+                                  columns=['workbook_name', 'last_updated'])
+stale_workbooks_df.to_sql('stale_workbooks', engine, if_exists='replace', index=False)
 
-    # for workbook_id in stale_workbooks['id']:
-    #     connection.workbooks.move(workbook_id, archive_project_id)
-
-# Sign Out:
-connection.sign_out()
+# Query the database for stale workbooks
+stale_workbooks_query = pd.read_sql_query("SELECT * FROM stale_workbooks", engine)
+print("\nStale Workbooks in Database:")
+print(stale_workbooks_query)
