@@ -1,0 +1,29 @@
+# Install Required Libraries:
+# pip install tableau-api-lib
+
+# Import Libraries:
+from tableau_api_lib import TableauServerConnection, Server
+from tableau_api_lib.utils.querying import get_projects_dataframe, get_workbooks_dataframe
+from datetime import datetime, timedelta
+
+# Connect to Tableau Server:
+server = Server('https://your-tableau-server-url')
+server.use_server_version()
+connection = TableauServerConnection('your-username', 'your-password', server)
+connection.sign_in()
+
+# Identify Stale Content:
+threshold_date = datetime.now() - timedelta(days=365)  # adjust the days as needed
+all_workbooks_df = get_workbooks_dataframe(connection)
+stale_workbooks = all_workbooks_df[all_workbooks_df['updated_at'] < threshold_date]
+
+# Move Stale Content to Archive:
+archive_project_name = 'Archive'
+all_projects_df = get_projects_dataframe(connection)
+archive_project_id = all_projects_df.loc[all_projects_df['name'] == archive_project_name, 'id'].values[0]
+
+for workbook_id in stale_workbooks['id']:
+    connection.workbooks.move(workbook_id, archive_project_id)
+
+# Sign Out:
+connection.sign_out()
