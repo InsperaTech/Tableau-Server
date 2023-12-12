@@ -1,42 +1,55 @@
-import tableauserverclient as TSC
+import argparse
+import getpass
+from tableauserverclient import Server, ConnectionCredentials
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine
-import pandas as pd
 
-# Tableau Server information
-tableau_server = 'https://your-tableau-server'
-username = 'your-username'
-password = 'your-password'
-site = 'your-site'
+def login_to_tableau_server(server, username, password, site=""):
+    # Establish a connection to Tableau Server
+    server = Server(server)
+    server.use_server_version()
 
-# Connect to Tableau Server
-tableau_auth = TSC.TableauAuth(username, password, site)
-server = TSC.Server(tableau_server)
+    # Sign in to Tableau Server
+    if site:
+        server.auth.sign_in(ConnectionCredentials(username, password), site=site)
+    else:
+        server.auth.sign_in(ConnectionCredentials(username, password))
 
-# Set threshold for stale content (in days)
-threshold_days = 45
-cutoff_date = datetime.now() - timedelta(days=threshold_days)
+    return server
 
-# Connect to Tableau Server and get workbook information
-with server.auth.sign_in(tableau_auth):
-    all_workbooks, pagination_item = server.workbooks.get()
-    stale_workbooks = [workbook for workbook in all_workbooks if workbook.updated_at < cutoff_date]
+def search_stale_content(server, days_threshold=30):
+    # Get all projects from the server
+    all_projects, pagination_item = server.projects.get()
+    
+    for project in all_projects:
+        # Get all workbooks in the project
+        all_workbooks, pagination_item = server.workbooks.get(project_id=project.id)
+        
+        for workbook in all_workbooks:
+            # Check the last modified timestamp of the workbook
+            last_modified = datetime.strptime(workbook.updated_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+            days_since_last_modified = (datetime.utcnow() - last_modified).days
+            
+            # If the workbook is stale, print its details
+            if days_since_last_modified > days_threshold:
+                print(f"Stale Workbook found: {workbook.name} in Project: {project.name}")
 
-# Display stale workbook information
-print("Stale Workbooks:")
-for workbook in stale_workbooks:
-    print(f"Name: {workbook.name}, Last Updated: {workbook.updated_at}")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Search for stale content on Tableau Server')
+    parser.add_argument('--server', '-s', required=True, help='Tableau Server address')
+    parser.add_argument('--username', '-u', required=True, help='Username to sign into Tableau Server')
+    parser.add_argument('--site', '-t', default='', help='Tableau Server site (optional)')
+    parser.add_argument('--days-threshold', '-d', type=int, default=30, help='Number of days to consider as stale (default: 30)')
 
-# SQL connection to store stale workbook information
-db_connection_string = 'sqlite:///stale_workbooks.db'  # Change this based on your database type
-engine = create_engine(db_connection_string)
+    args = parser.parse_args()
 
-# Store stale workbook information in a database table
-stale_workbooks_df = pd.DataFrame([(workbook.name, workbook.updated_at) for workbook in stale_workbooks], 
-                                  columns=['workbook_name', 'last_updated'])
-stale_workbooks_df.to_sql('stale_workbooks', engine, if_exists='replace', index=False)
+    # Prompt user for password
+    password = getpass.getpass('Enter password: ')
 
-# Query the database for stale workbooks
-stale_workbooks_query = pd.read_sql_query("SELECT * FROM stale_workbooks", engine)
-print("\nStale Workbooks in Database:")
-print(stale_workbooks_query)
+    # Login to Tableau Server
+    tableau_server = login_to_tableau_server(args.server, args.username, password, args.site)
+
+    # Search for stale content
+    search_stale_content(tableau_server, args.days_threshold)
+
+    # Sign out
+    tableau_server.auth.sign_out()
