@@ -127,7 +127,6 @@ if __name__ == "__main__":
         # Close the database connection
         connection.close()
 ----------------------------------------------------------------------------
-
 import psycopg2
 import pandas as pd
 
@@ -145,18 +144,17 @@ def get_stale_content(conn, stale_threshold_days=30):
         cursor.execute(workbook_query, (stale_threshold_days,))
         stale_workbooks = cursor.fetchall()
 
-        # Convert the result to a DataFrame
-        columns = ["Name", "Project", "Last Updated"]
-        stale_workbooks_df = pd.DataFrame(stale_workbooks, columns=columns)
+        # Create a DataFrame from the fetched data
+        df = pd.DataFrame(stale_workbooks, columns=['Name', 'Project', 'Last Updated'])
 
         # Print information about stale workbooks
         print("Stale Workbooks:")
-        print(stale_workbooks_df)
+        print(df)
 
-        # Save the DataFrame to an Excel file
-        excel_filename = "stale_workbooks.xlsx"
-        stale_workbooks_df.to_excel(excel_filename, index=False)
-        print(f"Stale workbook information saved to {excel_filename}")
+        # Export stale data to Excel
+        excel_filename = 'stale_workbooks.xlsx'
+        df.to_excel(excel_filename, index=False)
+        print(f"Stale data exported to {excel_filename}")
 
         cursor.close()
     except Exception as error:
@@ -191,4 +189,3 @@ if __name__ == "__main__":
         if conn:
             conn.close()
             print("Connection closed.")
-
