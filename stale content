@@ -29,3 +29,75 @@ with server.auth.sign_in(tableau_auth):
 print("Stale Workbooks:")
 for workbook in stale_workbooks:
     print(f"Name: {workbook.name}, Last Updated: {workbook.updated_at}")
+
+
+------------------------------------------------------------------------------------------------
+
+import argparse
+import getpass
+import psycopg2
+from datetime import datetime, timedelta
+
+def connect_to_postgresql(host, port, user, password, database):
+    try:
+        connection = psycopg2.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database
+        )
+        return connection
+    except Exception as e:
+        print(f"Error: Unable to connect to PostgreSQL database - {e}")
+        return None
+
+def get_stale_content(connection, days_threshold=30):
+    try:
+        cursor = connection.cursor()
+
+        # Query for stale content
+        query = """
+            SELECT projects.name AS project_name, workbooks.name AS workbook_name, workbooks.updated_at
+            FROM workbooks
+            JOIN projects ON workbooks.project_id = projects.id
+            WHERE current_date - workbooks.updated_at::date > %s;
+        """
+
+        cursor.execute(query, (days_threshold,))
+
+        stale_content = cursor.fetchall()
+
+        # Print the stale content
+        for row in stale_content:
+            project_name, workbook_name, updated_at = row
+            print(f"Stale Workbook found: {workbook_name} in Project: {project_name}, Last Updated: {updated_at}")
+
+        cursor.close()
+    except Exception as e:
+        print(f"Error: Unable to retrieve stale content - {e}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Connect to Tableau PostgreSQL and get the list of stale content')
+    parser.add_argument('--host', '-H', required=True, help='PostgreSQL host')
+    parser.add_argument('--port', '-P', type=int, required=True, help='PostgreSQL port')
+    parser.add_argument('--user', '-u', required=True, help='PostgreSQL username')
+    parser.add_argument('--password', '-p', help='PostgreSQL password')
+    parser.add_argument('--database', '-d', required=True, help='PostgreSQL database name')
+    parser.add_argument('--days-threshold', '-t', type=int, default=30, help='Number of days to consider as stale (default: 30)')
+
+    args = parser.parse_args()
+
+    # Prompt for password if not provided as a command-line argument
+    password = args.password or getpass.getpass('Enter PostgreSQL password: ')
+
+    # Connect to PostgreSQL
+    connection = connect_to_postgresql(args.host, args.port, args.user, password, args.database)
+
+    if connection:
+        # Get stale content
+        get_stale_content(connection, args.days_threshold)
+
+        # Close the database connection
+        connection.close()
+
