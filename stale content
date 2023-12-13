@@ -103,3 +103,27 @@ if __name__ == "__main__":
 except Exception as e:
         print(f"Error: Unable to retrieve stale content - {e}")
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Connect to Tableau PostgreSQL and get the list of stale content')
+    parser.add_argument('--host', '-H', required=True, help='PostgreSQL host')
+    parser.add_argument('--port', '-P', type=int, required=True, help='PostgreSQL port')
+    parser.add_argument('--user', '-u', required=True, help='PostgreSQL username')
+    parser.add_argument('--password', '-p', help='PostgreSQL password')
+    parser.add_argument('--database', '-d', required=True, help='PostgreSQL database name')
+    parser.add_argument('--days-threshold', '-t', type=int, default=30, help='Number of days to consider as stale (default: 30)')
+
+    args = parser.parse_args()
+
+    # Prompt for password if not provided as a command-line argument
+    password = args.password or getpass.getpass('Enter PostgreSQL password: ')
+
+    # Connect to PostgreSQL
+    connection = connect_to_postgresql(args.host, args.port, args.user, password, args.database)
+
+    if connection:
+        # Get stale content
+        get_stale_content(connection, args.days_threshold)
+
+        # Close the database connection
+        connection.close()
+
