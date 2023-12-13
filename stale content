@@ -127,6 +127,7 @@ if __name__ == "__main__":
         # Close the database connection
         connection.close()
 ----------------------------------------------------------------------------
+#stale content data based on last updated date
 import psycopg2
 import pandas as pd
 
