@@ -129,6 +129,7 @@ if __name__ == "__main__":
 ----------------------------------------------------------------------------
 
 import psycopg2
+import pandas as pd
 
 def get_stale_content(conn, stale_threshold_days=30):
     try:
@@ -144,13 +145,18 @@ def get_stale_content(conn, stale_threshold_days=30):
         cursor.execute(workbook_query, (stale_threshold_days,))
         stale_workbooks = cursor.fetchall()
 
+        # Convert the result to a DataFrame
+        columns = ["Name", "Project", "Last Updated"]
+        stale_workbooks_df = pd.DataFrame(stale_workbooks, columns=columns)
+
         # Print information about stale workbooks
         print("Stale Workbooks:")
-        for workbook in stale_workbooks:
-            name, project_name, updated_at = workbook
-            print(f"Name: {name}, Project: {project_name}, Last Updated: {updated_at}")
+        print(stale_workbooks_df)
 
-        # You can add similar queries for other types of content (datasources, etc.)
+        # Save the DataFrame to an Excel file
+        excel_filename = "stale_workbooks.xlsx"
+        stale_workbooks_df.to_excel(excel_filename, index=False)
+        print(f"Stale workbook information saved to {excel_filename}")
 
         cursor.close()
     except Exception as error:
@@ -185,5 +191,4 @@ if __name__ == "__main__":
         if conn:
             conn.close()
             print("Connection closed.")
-
 
