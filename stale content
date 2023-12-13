@@ -126,4 +126,64 @@ if __name__ == "__main__":
 
         # Close the database connection
         connection.close()
+----------------------------------------------------------------------------
+
+import psycopg2
+
+def get_stale_content(conn, stale_threshold_days=30):
+    try:
+        cursor = conn.cursor()
+
+        # Example SQL query to retrieve stale workbooks
+        workbook_query = """
+            SELECT name, project_name, updated_at
+            FROM workbooks
+            WHERE current_date - updated_at::date > %s;
+        """
+
+        cursor.execute(workbook_query, (stale_threshold_days,))
+        stale_workbooks = cursor.fetchall()
+
+        # Print information about stale workbooks
+        print("Stale Workbooks:")
+        for workbook in stale_workbooks:
+            name, project_name, updated_at = workbook
+            print(f"Name: {name}, Project: {project_name}, Last Updated: {updated_at}")
+
+        # You can add similar queries for other types of content (datasources, etc.)
+
+        cursor.close()
+    except Exception as error:
+        print('ERROR', error)
+        pass
+
+if __name__ == "__main__":
+    conn_string = (
+        "host=" + "nldn105466pap.***prod.msad.***.net" +
+        " port=" + "8060" +
+        " dbname=" + 'workgroup' +
+        " user=" + 'readonly' +
+        " password=" + 'Tableau2014'
+    )
+
+    try:
+        # Connect to PostgreSQL
+        conn = psycopg2.connect(conn_string)
+        print("Connected!")
+
+        # Specify the threshold for stale content (in days)
+        stale_threshold_days = 30
+
+        # Get and print stale content information
+        get_stale_content(conn, stale_threshold_days)
+
+    except Exception as error:
+        print('ERROR', error)
+
+    finally:
+        # Close the database connection
+        if conn:
+            conn.close()
+            print("Connection closed.")
+
 
