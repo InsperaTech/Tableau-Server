@@ -1,0 +1,62 @@
+import requests
+import smtplib
+from email.mime.text import MIMEText
+
+# Tableau Server Information
+tableau_server = 'https://your-tableau-server'
+api_version = 'api/3.5'
+username = 'your-username'
+password = 'your-password'
+
+# Email Configuration
+email_server = 'your-smtp-server'
+email_port = 587
+email_username = 'your-email-username'
+email_password = 'your-email-password'
+sender_email = 'your-sender-email'
+
+# Space Utilization Threshold (in percentage)
+threshold_percentage = 90
+
+def get_site_space_utilization():
+    # Get space utilization for each site
+    url = f'{tableau_server}/{api_version}/sites'
+    response = requests.get(url, auth=(username, password))
+    sites = response.json()['sites']['site']
+
+    for site in sites:
+        site_id = site['id']
+        site_name = site['contentUrl']
+
+        # Get site storage information
+        url = f'{tableau_server}/{api_version}/sites/{site_id}/storage'
+        response = requests.get(url, auth=(username, password))
+        storage_info = response.json()['storage']
+
+        total_space = storage_info['total']
+        used_space = storage_info['used']
+
+        # Calculate space utilization percentage
+        utilization_percentage = (used_space / total_space) * 100
+
+        # Check if the utilization exceeds the threshold
+        if utilization_percentage >= threshold_percentage:
+            send_alert(site_name, utilization_percentage)
+
+def send_alert(site_name, utilization_percentage):
+    # Prepare and send email alert
+    subject = f'Tableau Server Space Alert: {site_name}'
+    body = f'Tableau Server site {site_name} has reached {utilization_percentage:.2f}% space utilization.'
+
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = sender_email
+    msg['To'] = 'site-admin@example.com'  # Replace with the actual admin email
+
+    with smtplib.SMTP(email_server, email_port) as server:
+        server.starttls()
+        server.login(email_username, email_password)
+        server.sendmail(sender_email, [msg['To']], msg.as_string())
+
+if __name__ == '__main__':
+    get_site_space_utilization()
