@@ -60,3 +60,21 @@ def send_alert(site_name, utilization_percentage):
 
 if __name__ == '__main__':
     get_site_space_utilization()
+
+
+####Sites List 
+
+ if response.status_code == 200:
+        sites = response.json()['sites']['site']
+        return [site['name'] for site in sites]
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
+        return None
+
+if __name__ == '__main__':
+    all_sites = get_all_sites()
+    
+    if all_sites:
+        print("List of all Tableau Server sites:")
+        for site in all_sites:
+            print(site)
