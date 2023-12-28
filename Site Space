@@ -61,10 +61,20 @@ def send_alert(site_name, utilization_percentage):
 if __name__ == '__main__':
     get_site_space_utilization()
 
-
 ####Sites List 
+import sys
+import requests
 
- if response.status_code == 200:
+# Tableau Server Information
+tableau_server = 'https://your-tableau-server'
+api_version = 'api/3.5'
+
+def get_all_sites(username, password):
+    # Get a list of all sites on Tableau Server
+    url = f'{tableau_server}/{api_version}/sites'
+    response = requests.get(url, auth=(username, password))
+    
+    if response.status_code == 200:
         sites = response.json()['sites']['site']
         return [site['name'] for site in sites]
     else:
@@ -72,7 +82,14 @@ if __name__ == '__main__':
         return None
 
 if __name__ == '__main__':
-    all_sites = get_all_sites()
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <username> <password>")
+        sys.exit(1)
+
+    username = sys.argv[1]
+    password = sys.argv[2]
+
+    all_sites = get_all_sites(username, password)
     
     if all_sites:
         print("List of all Tableau Server sites:")
