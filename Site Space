@@ -52,3 +52,25 @@ with server.auth.sign_in(tableau_auth):
  
     # Print the list of site IDs
     print("Site IDs:", site_ids)
+
+--------------------------------------------------------------------------
+from tableauserverclient import *
+from tableauserverclient.models import SiteItem
+ 
+# Set your Tableau Server information
+tableau_server = 'https://your-tableau-server'
+username = 'your-username'
+password = 'your-password'
+site_name = 'your-site'  # If you're using the default site, set this to an empty string ''
+ 
+# Sign in to Tableau Server
+tableau_auth = TSC.TableauAuth(username, password)
+server = TSC.Server(tableau_server)
+ 
+# Specify the site to connect to
+with server.auth.sign_in(tableau_auth):
+    # Get the site information
+    site_item = server.sites.get_by_name(site_name)
+ 
+    # Print site information
+    print(f"Site ID: {site_item.id}, Site Name: {site_item.name}, Content URL: {site_item.content_url}")
