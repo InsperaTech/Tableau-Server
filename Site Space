@@ -21,3 +21,34 @@ for site in sites:
  
 # Sign out from Tableau Server
 connection.sign_out()
+
+----------------------------------------------------------------------------------
+from tableauserverclient import *
+from tableauserverclient.models import SiteItem
+ 
+# Set your Tableau Server information
+tableau_server = 'https://your-tableau-server'
+username = 'your-username'
+password = 'your-password'
+site = 'your-site'  # If you're using the default site, set this to an empty string ''
+ 
+# Sign in to Tableau Server
+tableau_auth = TSC.TableauAuth(username, password)
+server = TSC.Server(tableau_server)
+ 
+# Specify the site to connect to
+site_item = SiteItem(name=site)
+with server.auth.sign_in(tableau_auth):
+    # Get the list of sites
+    all_sites, pagination_item = server.sites.get()
+ 
+    # Create a list to store site IDs
+    site_ids = []
+ 
+    # Print the list of sites and store site IDs
+    for site in all_sites:
+        print(f"Site ID: {site.id}, Site Name: {site.name}")
+        site_ids.append(site.id)
+ 
+    # Print the list of site IDs
+    print("Site IDs:", site_ids)
