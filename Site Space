@@ -1,34 +1,23 @@
-import requests
-
+from tableau_api_lib import TableauServerConnection
+ 
 # Set your Tableau Server information
 tableau_server = 'https://your-tableau-server'
 username = 'your-username'
 password = 'your-password'
-site = ''  # If you're using the default site, set this to an empty string
-
-# Construct the API endpoint for listing sites
-api_url = f'{tableau_server}/api/3.5/sites'
-
-# Set up authentication headers
-auth_headers = {
-    'Content-Type': 'application/json',
-}
-
-# Set up the request parameters
-params = {
-    'filter': 'all',
-}
-
-# Make the request to list sites
-response = requests.get(api_url, auth=(username, password), headers=auth_headers, params=params)
-
-# Check if the request was successful (status code 200)
-if response.status_code == 200:
-    sites = response.json()['sites']['site']
-    
-    # Print the list of sites
-    print("List of all Tableau Server sites:")
-    for site in sites:
-        print(f"Site ID: {site['id']}, Site Name: {site['name']}")
-else:
-    print(f"Error: {response.status_code} - {response.text}")
+site = 'your-site'  # If you're using the default site, set this to an empty string ''
+ 
+# Create a connection to Tableau Server
+connection = TableauServerConnection(server=tableau_server, username=username, password=password, site=site)
+ 
+# Sign in to Tableau Server
+connection.sign_in()
+ 
+# Get the list of sites
+sites = connection.query_sites()
+ 
+# Print the list of sites
+for site in sites:
+    print(f"Site ID: {site.id}, Site Name: {site.name}")
+ 
+# Sign out from Tableau Server
+connection.sign_out()
