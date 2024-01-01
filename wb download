@@ -1,0 +1,11 @@
+workbook_id = row[8].path.split('/')[-1]
+try:         
+	# Download workbook content        
+	workbook_content = connection.workbooks.download(workbook_id)         
+	# Save workbook locally        
+	workbook_name = f'{workbook_id}.twb'      
+	with open(workbook_name, 'wb') as workbook_file:             
+		workbook_file.write(workbook_content)         
+	print(f"Workbook '{workbook_id}' downloaded successfully.")     
+except Exception as e:         
+	print(f"Failed to download workbook '{workbook_id}': {str(e)}")
