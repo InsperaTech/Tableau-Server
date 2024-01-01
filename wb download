@@ -9,3 +9,8 @@ try:
 	print(f"Workbook '{workbook_id}' downloaded successfully.")     
 except Exception as e:         
 	print(f"Failed to download workbook '{workbook_id}': {str(e)}")
+
+
+--------------------------------
+connection = tableauserverconnection(server=tableau_auth.server,username=tableau_auth.username,password=tableau_auth.password,site=tableau_auth.site)                                                                                   
+connection.sign_in()
