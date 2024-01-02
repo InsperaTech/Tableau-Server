@@ -1,0 +1,23 @@
+def create_archive_folder(site):
+    with server.auth.sign_in(tableau_auth):
+        try:
+            # Check if the archive folder already exists
+            archive_folder_name = 'Archive'
+            all_projects = list(TSC.Pager(server.projects))
+            for project in all_projects:
+                if project.name == archive_folder_name:
+                    print(f"Archive folder already exists in site {site}")
+                    return
+ 
+            # Create the archive folder
+            new_project = TSC.ProjectItem(name=archive_folder_name)
+            new_project = server.projects.create(new_project)
+ 
+            print(f"Archive folder created in site {site}")
+ 
+        except Exception as error:
+            print(f"Error creating archive folder in site {site}: {error}")
+            pass
+ 
+# Call this function in your move_stale_content loop before moving the stale content
+create_archive_folder(content_site)
