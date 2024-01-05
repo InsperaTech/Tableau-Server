@@ -74,3 +74,9 @@ with server.auth.sign_in(tableau_auth):
  
     # Print site information
     print(f"Site ID: {site_item.id}, Site Name: {site_item.name}, Content URL: {site_item.content_url}")
+
+
+"{}\\{}\\{}"
+.
+format
+(temp_location, sitename, workbook_name)
