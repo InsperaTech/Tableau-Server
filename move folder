@@ -1,0 +1,28 @@
+import shutil
+import os
+
+def move_files(src_folder, dest_folder):
+    # Check if the source folder exists
+    if not os.path.exists(src_folder):
+        print(f"Source folder '{src_folder}' does not exist.")
+        return
+
+    # Check if the destination folder exists, create if not
+    if not os.path.exists(dest_folder):
+        os.makedirs(dest_folder)
+
+    # Get the list of files in the source folder
+    files = os.listdir(src_folder)
+
+    # Move each file to the destination folder
+    for file in files:
+        src_path = os.path.join(src_folder, file)
+        dest_path = os.path.join(dest_folder, file)
+        shutil.move(src_path, dest_path)
+        print(f"Moved '{file}' to '{dest_folder}'.")
+
+# Example usage
+source_folder = '/path/to/source/folder'
+destination_folder = '/path/to/shared/drive/folder'
+
+move_files(source_folder, destination_folder)
