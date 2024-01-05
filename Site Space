@@ -80,3 +80,6 @@ with server.auth.sign_in(tableau_auth):
 .
 format
 (temp_location, sitename, workbook_name)
+
+file_path = os.path.join(full_temp_location, f"{workbook.name}.twb")
+        server.workbooks.download(workbook, filepath=file_path, include_extract=False)
