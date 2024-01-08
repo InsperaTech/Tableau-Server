@@ -8,10 +8,10 @@ SELECT
     u.friendly_name,
     u.email,
     CONCAT('https://tableau.***.net/#/site/', dw.url_namespace, '/', LOWER(dw.type), 's/', CASE 
-            WHEN dw.type = 'Datasource' THEN STR(dw.dc_id)
-            WHEN dw.type = 'Workbook' THEN STR(dw.id)
+            WHEN dw.type = 'Datasource' THEN CAST(dw.dc_id AS TEXT)
+            WHEN dw.type = 'Workbook' THEN CAST(dw.id AS TEXT)
         END) AS URL,
-    DATEDIFF('day', NOW(), MAX(dw.last_view_time)) as data_diff,
+    EXTRACT('day' FROM NOW() - MAX(dw.last_view_time)) as data_diff,
     dw.luid,
     SUM(dw.size) AS size
 FROM (
@@ -112,18 +112,3 @@ WHERE
 GROUP BY
     dw.id,
     dw.object_name,
-    dw.owner_name,
-    dw.type,
-    dw.site_name,
-    u.friendly_name,
-    u.email,
-    dw.dc_id,
-    dw.url_namespace,
-    dw.project_name,
-    dw.luid
-
-HAVING
-    DATEDIFF('day', NOW(), MAX(dw.last_view_time)) >= 100
-
-ORDER BY
-    data_diff DESC;
