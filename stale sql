@@ -1,0 +1,113 @@
+SELECT
+    dw.id,
+    dw.object_name,
+    dw.owner_name,
+    dw.project_name,
+    dw.type,
+    dw.site_name,
+    u.friendly_name,
+    u.email,
+    CONCAT('https://tableau.***.net/#/site/', dw.url_namespace, '/', LOWER(dw.type), 's/', (CASE 
+            WHEN dw.type = 'Datasource' THEN dw.dc_id
+            WHEN dw.type = 'Workbook' THEN dw.id
+        END)) AS URL,
+    DATE_PART('day', NOW() - MAX(dw.last_view_time)) AS data_diff,
+    dw.luid,
+    SUM(dw.size) AS size
+FROM
+    (SELECT
+        w.id AS Id,
+        'Workbook' AS type,
+        w.name AS Object_name,
+        w.owner_name,
+        w.project_name,
+        w.updated_at,
+        s.name AS site_name,
+        s.url_namespace,
+        w.size,
+        av.last_view_time,
+        av.nviews,
+        w.owner_id,
+        NULL AS DC_ID,
+        w.project_id,
+        wb.luid
+    FROM
+        _workbooks w
+    INNER JOIN _sites s ON w.site_id = s.id
+    INNER JOIN workbooks wb ON w.id = wb.id
+    LEFT JOIN (SELECT
+            v.workbook_id,
+            MAX(vs.time) AS last_view_time,
+            SUM(vs.Nviews) AS nviews
+        FROM
+            views v
+        LEFT JOIN views_stats vs ON v.id = vs.view_id
+        GROUP BY
+            v.workbook_id) AS av ON av.workbook_id = w.id
+
+    UNION ALL
+
+    SELECT
+        d.id,
+        'Datasource' AS type,
+        d.name AS Object_name,
+        d.owner_name,
+        d.project_name,
+        d.updated_at,
+        s.name AS site_name,
+        s.url_namespace,
+        d.size,
+        st.last_access_time,
+        st.nviews,
+        d.owner_id,
+        dc.id AS DC_ID,
+        d.project_id,
+        ds.luid
+    FROM
+        _datasources d
+    LEFT JOIN _datasources_stats st ON d.id = st.datasource_id
+    LEFT JOIN data_connections dc ON d.id = dc.datasource_id
+    INNER JOIN _sites s ON d.site_id = s.id
+    INNER JOIN datasources ds ON d.id = ds.id
+    GROUP BY
+        d.id,
+        d.name,
+        d.owner_name,
+        d.updated_at,
+        d.project_name,
+        s.name,
+        s.url_namespace,
+        d.size,
+        st.last_access_time,
+        st.nviews,
+        d.owner_id,
+        dc.id,
+        d.project_id,
+        ds.luid) dw
+LEFT JOIN (SELECT
+        u.id AS user_id,
+        su.email,
+        su.friendly_name
+    FROM
+        _users u
+    LEFT JOIN _system_users su ON su.id = u.system_user_id) u ON dw.owner_id = user_id
+WHERE
+    dw.url_namespace = '{site}'
+    AND NOT dw.project_name = '{destination_project}'
+GROUP BY
+    dw.id,
+    dw.object_name,
+    dw.owner_name,
+    dw.type,
+    dw.site_name,
+    u.friendly_name,
+    u.email,
+    dw.dc_id,
+    dw.id,
+    dw.url_namespace,
+    dw.project_name,
+    dw.luid
+HAVING
+    DATE_PART('day', NOW() - MAX(dw.last_view_time)) >= 100
+ORDER BY
+    data_diff DESC;
