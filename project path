@@ -1,0 +1,28 @@
+
+WITH RECURSIVE project_path AS (
+  SELECT
+    id,
+    name,
+    parent_id,
+    name AS path
+  FROM
+    projects
+  WHERE
+    id = 'your_child_project_id' -- Replace with the ID of your child project
+
+  UNION ALL
+
+  SELECT
+    p.id,
+    p.name,
+    p.parent_id,
+    pp.path || ' -> ' || p.name
+  FROM
+    projects p
+  JOIN
+    project_path pp ON p.id = pp.parent_id
+)
+SELECT
+  path
+FROM
+  project_path;
